@@ -29,7 +29,7 @@ static const char* TAG = "ADC";
 #define PI 3.14159265
 
 static const i2s_config_t i2s_config = {
-     .mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX | I2S_MODE_DAC_BUILT_IN,
+     .mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_DAC_BUILT_IN,
      .sample_rate = 4000,
      .bits_per_sample = 8, /* must be 8 for built-in DAC */
      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
@@ -51,8 +51,8 @@ void dac_init() {
     // Make sure data is between 0 and 1V
     for(uint i = 0; i < 256; i++) {
         sin_float = sin(i / 128.0 * 2 * PI);
-        sin_float *= 35;
-        sin_float += 36;
+        sin_float *= 31;
+        sin_float += 32;
 
         samples[i] = (char) sin_float;
     }
@@ -136,9 +136,9 @@ void adc1task(void* arg)
 void app_main()
 {
     // 12 bit version of the adc introduces the bug
-    // adc1_config_width(ADC_WIDTH_12Bit);
+    adc1_config_width(ADC_WIDTH_12Bit);
     // Uncomment to see difference in behaviour with 12 bit version
-    adc1_config_width(ADC_WIDTH_11Bit);
+    // adc1_config_width(ADC_WIDTH_11Bit);
 
     xTaskCreate(adc1task, "adc1task", 1024*3, NULL, 10, NULL);
 }
