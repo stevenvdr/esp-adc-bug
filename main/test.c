@@ -31,21 +31,24 @@ static const char* TAG = "ADC";
 static const i2s_config_t i2s_config = {
      .mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_DAC_BUILT_IN,
      .sample_rate = 4000,
-     .bits_per_sample = 8, /* must be 8 for built-in DAC */
-     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
-     .communication_format = I2S_COMM_FORMAT_I2S_MSB ,
+     .bits_per_sample = 16, /* must be 8 for built-in DAC */
+     .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+     .communication_format = I2S_COMM_FORMAT_I2S_MSB,
      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // high interrupt priority
      .dma_buf_count = 2,
      .dma_buf_len = 128
 };
 
 void dac_init() {
-    char samples[256];
+    uint samples[128];
     float sin_float;
     // Setup the i2s dma
     i2s_driver_install(I2S_NUM, &i2s_config, 0, NULL);   //install and start i2s driver
     // Connect dac to i2s
     i2s_set_pin(I2S_NUM, NULL); //for internal DAC
+
+    i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
+    i2s_set_sample_rates(I2S_NUM, 4000); //set sample rates
 
     // Create Data
     // Make sure data is between 0 and 1V
@@ -54,10 +57,17 @@ void dac_init() {
         sin_float *= 31;
         sin_float += 32;
 
-        samples[i] = (char) sin_float;
+        if (i % 2 ) {
+            samples[i/2] =  ((char) sin_float) << 8;// ((i % 8) << 8) + ((i % 8) << 24);
+        }
+        else {
+            samples[i/2] =  ((char) sin_float) << 24;// ((i % 8) << 8) + ((i % 8) << 24);
+        }
     }
     // Write data to the buffer. This is timing dependant, so be carefull with 
     // changing the configuration
+    i2s_write_bytes(I2S_NUM, (char*) &samples, 256, portMAX_DELAY);
+    i2s_write_bytes(I2S_NUM, (char*) &samples, 256, portMAX_DELAY);
     i2s_write_bytes(I2S_NUM, (char*) &samples, 256, portMAX_DELAY);
     i2s_write_bytes(I2S_NUM, (char*) &samples, 256, portMAX_DELAY);
  
